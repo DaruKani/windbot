@@ -198,7 +198,7 @@ namespace WindBot.Game.AI.Decks
             CardId.ABCDragonBuster,
         };
 
-        public IList<ClientCard> OnSelectCardABC(IList<ClientCard> cards, int min, int max, long hint, bool cancelable)
+        public override IList<ClientCard> OnSelectCard(IList<ClientCard> cards, int min, int max, int hint, bool cancelable)
         {
             //Extra Deck millers
             int[] extradecksend =
@@ -267,7 +267,7 @@ namespace WindBot.Game.AI.Decks
                 }
                 if (todrop <= 0) return result;
             }
-            return null;
+            return base.OnSelectCard(cards, min, max, hint, cancelable);
         }
 
         public override CardPosition OnSelectPosition(int cardId, IList<CardPosition> positions)
@@ -282,14 +282,13 @@ namespace WindBot.Game.AI.Decks
             }
             return 0;
         }
-
-        public int OnSelectPlaceABC(long cardId, int player, CardLocation location, int available)
+        public override int OnSelectPlace(int cardId, int player, CardLocation location, int available)
         {
             if (location == CardLocation.MonsterZone)
             {
                 return available & ~Bot.GetLinkedZones();
             }
-            return 0;
+            return base.OnSelectPlace(cardId, player, location, available);
         }
 
         // update stats for battle prediction based on effects

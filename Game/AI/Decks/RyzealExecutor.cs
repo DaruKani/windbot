@@ -74,7 +74,7 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.SpSummon, _CardId.EvilswarmExcitonKnight, DefaultEvilswarmExcitonKnightSummon);
             AddExecutor(ExecutorType.Activate, _CardId.EvilswarmExcitonKnight, DefaultEvilswarmExcitonKnightEffect);
 
-            AddExecutor(ExecutorType.Activate, CardId.No103, DestroyEffect);
+            AddExecutor(ExecutorType.Activate, CardId.No103);
             AddExecutor(ExecutorType.Activate, CardId.RyzealHole, HoleEffect);
             AddExecutor(ExecutorType.Activate, CardId.LDignister);
 
@@ -91,8 +91,8 @@ namespace WindBot.Game.AI.Decks
             AddExecutor(ExecutorType.SpSummon, CardId.RyzealThode);
             AddExecutor(ExecutorType.Activate, CardId.RyzealThode, ThodeEffect);
             AddExecutor(ExecutorType.SpSummon, CardId.RyzealNode);
-            AddExecutor(ExecutorType.Activate, CardId.RyzealPlugin, PluginEffect);
-            AddExecutor(ExecutorType.Activate, CardId.RyzealCross, CrossEffect);
+            AddExecutor(ExecutorType.Activate, CardId.RyzealPlugin);
+            AddExecutor(ExecutorType.Activate, CardId.RyzealCross);
             AddExecutor(ExecutorType.Activate, CardId.BigJaw);
             AddExecutor(ExecutorType.Activate, CardId.DrakeShark);
             AddExecutor(ExecutorType.SpSummon, CardId.RyzealPalma,PalmaSS);
@@ -155,7 +155,7 @@ namespace WindBot.Game.AI.Decks
 
         bool summoned = false;
         bool SearchEX = false;
-        bool Cross = false;
+
         bool Fuwa = false;
 
         //GO FIRST
@@ -666,7 +666,6 @@ namespace WindBot.Game.AI.Decks
             removeChosenList = new List<ClientCard>();
             summoned = false;
             SearchEX = false;
-            Cross = false;
             Fuwa = false;
             activatedNo103List.Clear();
             activatedDDList.Clear();
@@ -713,10 +712,6 @@ namespace WindBot.Game.AI.Decks
 
         public bool AshBlossomActivate()
         {
-            if (CheckCross())
-            {
-                return false;
-            }
             if (CheckWhetherNegated(true) || !CheckLastChainShouldNegated()) return false;
             if (Duel.LastChainPlayer == 1 && Util.GetLastChainCard().IsCode(_CardId.MaxxC))
             {
@@ -736,10 +731,6 @@ namespace WindBot.Game.AI.Decks
 
         public bool InfiniteImpermanenceActivate()
         {
-            if (CheckCross())
-            {
-                return false;
-            }
             if (CheckWhetherNegated()) return false;
             // negate before effect used
             foreach (ClientCard m in Enemy.GetMonsters())
@@ -831,10 +822,6 @@ namespace WindBot.Game.AI.Decks
 
         public bool CalledbytheGraveActivate()
         {
-            if (CheckCross())
-            {
-                return false;
-            }
             if (CheckWhetherNegated(true)) return false;
             if (Duel.LastChainPlayer == 1)
             {
@@ -1041,20 +1028,20 @@ namespace WindBot.Game.AI.Decks
             return false;
 
         }
-
+        
         public override IList<ClientCard> OnSelectCard(IList<ClientCard> cards, int min, int max, int hint, bool cancelable)
         {
-            Logger.DebugWriteLine("=========================");
-            Logger.DebugWriteLine("OnSelectCard " + cards.Count + " " + min + " " + max);
-            for(int i = 0; i < cards.Count; i++)
+            //Logger.DebugWriteLine("=========================");
+            //Logger.DebugWriteLine("OnSelectCard " + cards.Count + " " + min + " " + max);
+            /*for(int i = 0; i < cards.Count; i++)
             {
                 Logger.DebugWriteLine("OnSelectCard Select " + cards[i].Name);
-            }
-            Logger.DebugWriteLine("=========================");
+            }*/
+            //Logger.DebugWriteLine("=========================");
             //Ryzeal Duo Search effect
             if (max == 2 && cards[0].Location == CardLocation.Deck && hint == HintMsg.AddToHand)
             {
-                Logger.DebugWriteLine("OnSelectCard Duo");
+                //Logger.DebugWriteLine("OnSelectCard Duo");
                 List<ClientCard> result = new List<ClientCard>();
                 foreach (ClientCard listCard in cards)
                 {
@@ -1088,9 +1075,46 @@ namespace WindBot.Game.AI.Decks
                 }
                 return Util.CheckSelectCount(result, cards, min, max);
             }
+
+            if (min == 2 && cards[0].Location == CardLocation.Grave && hint == HintMsg.ToDeck)
+            {
+                //Logger.DebugWriteLine("============Cross Draw=============");
+                List<ClientCard> ReturnList = new List<ClientCard>();
+                foreach (ClientCard graveCard in Bot.Graveyard)
+                {
+                    if (graveCard.HasSetcode(0x1be))
+                    {
+                        if (graveCard.HasType(CardType.Xyz) && graveCard.ProcCompleted == 0)
+                        {
+                            ReturnList.Add(graveCard);
+                        }
+                        else if (graveCard.HasType(CardType.Spell) || graveCard.HasType(CardType.Trap))
+                        {
+                            ReturnList.Add(graveCard);
+                        }
+                        else if (graveCard.IsCode(CardId.RyzealEx))
+                        {
+                            ReturnList.Add(graveCard);
+                        }
+                        else
+                        {
+                            ReturnList.Add(graveCard);
+                        }
+                    }
+                }
+                return Util.CheckSelectCount(ReturnList, cards, min, max);
+            }
+            if (max == 1 && cards[0].Location == CardLocation.Grave && hint == HintMsg.XyzMaterial)
+            {
+                return base.OnSelectCard(cards, min, max, hint, cancelable);
+            }
             return base.OnSelectCard(cards, min, max, hint, cancelable);
         }
-
+        public override int OnSelectPlace(int cardId, int player, CardLocation location, int available)
+        {
+            SelectSTPlace(Card, true);
+            return base.OnSelectPlace(cardId, player, location, available);
+        }
         public override int OnSelectOption(IList<int> options)
         {
             ClientCard currentSolvingChain = Duel.GetCurrentSolvingChainCard();
@@ -1107,7 +1131,6 @@ namespace WindBot.Game.AI.Decks
             }
             return base.OnSelectOption(options);
         }
-
         private bool Number41BagooskaTheTerriblyTiredTapirSummon()
         {
             if (!Util.IsTurn1OrMain2())
@@ -1125,8 +1148,7 @@ namespace WindBot.Game.AI.Decks
                 return Card.Overlays.Count == 0;
             return DefaultMonsterRepos();
         }
-
-
+        
         //=========================================================
         // Original Add
         //=========================================================
@@ -1256,13 +1278,11 @@ namespace WindBot.Game.AI.Decks
         {
             if (!Bot.HasInHandOrHasInMonstersZone(CardId.RyzealEx) && (SearchEX == false))
             {
-                SelectSTPlace(Card, true);
                 AI.SelectCard(CardId.RyzealEx);
                 return true;
             }
             if (CheckRemainInDeck(CardId.RyzealIce) > 0)
             {
-                SelectSTPlace(Card, true);
                 AI.SelectCard(CardId.RyzealIce);
                 return true;
             }
@@ -1270,27 +1290,20 @@ namespace WindBot.Game.AI.Decks
         }
         public bool SevenActivate()
         {
-            if (Bot.Hand.Count > 2) { return false; }
+            if (Bot.Hand.Count < 2) { return false; }
             if (!Bot.HasInHandOrHasInMonstersZone(CardId.RyzealEx) && (SearchEX == false))
             {
-                SelectSTPlace(Card, true);
                 AI.SelectCard(CardId.No104);
                 AI.SelectNextCard(CardId.RyzealEx);
                 return true;
             }
             else if (!Bot.HasInHandOrHasInMonstersZone(CardId.BigJaw) && CheckRemainInDeck(CardId.BigJaw) > 0)
             {
-                SelectSTPlace(Card, true);
                 AI.SelectCard(CardId.No101);
                 AI.SelectNextCard(CardId.BigJaw);
                 return true;
             }
             return false;
-        }
-        public bool PluginEffect()
-        {
-            SelectSTPlace(Card, true);
-            return true;
         }
         public bool HoleEffect()
         {
@@ -1298,12 +1311,9 @@ namespace WindBot.Game.AI.Decks
             {
                 return false;
             }
+            
             if (ActivateDescription == Util.GetStringId(CardId.RyzealHole, 0))
             {
-                if (CheckCross())
-                {
-                    return false;
-                }
                 if (CheckWhetherNegated())
                 {
                     return false;
@@ -1314,7 +1324,7 @@ namespace WindBot.Game.AI.Decks
                 if (target != null)
                 {
                     isProblemCard = true;
-                    Logger.DebugWriteLine("===Hole target 1: " + target?.Name);
+                    //Logger.DebugWriteLine("===Hole target 1: " + target?.Name);
                 }
                 // Destroy target
                 List<ClientCard> currentTargetList = Duel.LastChainTargets.Where(card => card.Controller == 1 &&
@@ -1326,7 +1336,7 @@ namespace WindBot.Game.AI.Decks
                     {
                         ShuffleCardList(currentTargetList);
                         target = currentTargetList[0];
-                        Logger.DebugWriteLine("===Hole target 2: " + target?.Name);
+                        //Logger.DebugWriteLine("===Hole target 2: " + target?.Name);
                     }
                 }
 
@@ -1339,7 +1349,7 @@ namespace WindBot.Game.AI.Decks
                     bool check3 = !Bot.UnderAttack;
                     bool check4 = Duel.Phase != DuelPhase.End;
                     bool check5 = Duel.Player == 0 || Enemy.GetMonsterCount() < 2;
-                    Logger.DebugWriteLine("===Hole check flag: " + check1 + " " + check2 + " " + check3 + " " + check4 + " " + check5);
+                    //Logger.DebugWriteLine("===Hole check flag: " + check1 + " " + check2 + " " + check3 + " " + check4 + " " + check5);
                     if (check1 && check2 && check3 && check4 && check5)
                     {
                         target = null;
@@ -1352,7 +1362,7 @@ namespace WindBot.Game.AI.Decks
                     {
                         removeChosenList.Add(target);
                     }
-                    Logger.DebugWriteLine("===Hole target final: " + target?.Name);
+                    //Logger.DebugWriteLine("===Hole target final: " + target?.Name);
                     activatedHoleList.Add(Card);
                     AI.SelectCard();
                     if(currentTargetList.Count() > 1)
@@ -1370,131 +1380,66 @@ namespace WindBot.Game.AI.Decks
                 return false;
             }
 
-            return false;
+            return true;
         }
         public bool DestroyEffect()
         {
-            if (ActivateDescription == Util.GetStringId(CardId.RyzealDD, 0))
-            {
-                Logger.DebugWriteLine("===DD Activate1: " + ActivateDescription);
-                AI.SelectCard();
-                return true;
-            }
+            Logger.DebugWriteLine("============DD Start ============  ");
             // Destroy
-            if ((ActivateDescription == Util.GetStringId(CardId.RyzealDD, 1)) || 
-                (ActivateDescription == Util.GetStringId(CardId.No103, 0)))
-            {
-                Logger.DebugWriteLine("===DD Activate2: " + ActivateDescription);
-                if (CheckCross())
+            if (ActivateDescription == Util.GetStringId(CardId.RyzealDD, 1))
                 {
+                    Logger.DebugWriteLine("============DD Trigger Des1 ============  ");
+                    if (CheckWhetherNegated()) { return false;}
+                    // Destroy problem card
+                    ClientCard target = GetProblematicEnemyCard();
+                    bool isProblemCard = false;
+                    if (target != null) { isProblemCard = true;}
+                    // Destroy target
+                    if (Duel.LastChainPlayer == 1 && target == null)
+                    {
+                        List<ClientCard> currentTargetList = Duel.LastChainTargets.Where(card => card.Controller == 1 &&
+                            (card.Location == CardLocation.MonsterZone || card.Location == CardLocation.SpellZone || card.Location == CardLocation.FieldZone)).ToList();
+                        if (currentTargetList.Count() > 0)
+                        {
+                            target = ShuffleCardList(currentTargetList)[0];
+                        }
+                    }
+
+                    // dump Destroy
+                    if (target == null)
+                    {
+                        target = GetBestEnemyCard(false, false);
+                        bool check1 = !DefaultOnBecomeTarget() || Util.ChainContainsCard(_CardId.EvenlyMatched);
+                        bool check2 = !targetedDDList.Contains(Card);
+                        bool check3 = !Bot.UnderAttack;
+                        bool check4 = Duel.Phase != DuelPhase.End;
+                        bool check5 = Duel.Player == 0 || Enemy.GetMonsterCount() < 2;
+                        //Logger.DebugWriteLine("===DD check flag: " + check1 + " " + check2 + " " + check3 + " " + check4 + " " + check5);
+                        if (check1 && check2 && check3 && check4 && check5)
+                        {
+                            target = null;
+
+                        }
+                    }
+                    if (target != null && (Duel.LastChainPlayer != 0 || Util.GetLastChainCard() == Card))
+                    {
+                        if (isProblemCard)
+                        {
+                            removeChosenList.Add(target);
+                        }
+                        activatedDDList.Add(Card);
+                        AI.SelectCard(target);
+                        Logger.DebugWriteLine("============DD Destroy  ");
+                        return true;
+                    }
                     return false;
-                }
-                if (CheckWhetherNegated())
-                {
-                    return false;
-                }
-                // Destroy problem card
-                ClientCard target = GetProblematicEnemyCard();
-                bool isProblemCard = false;
-                if (target != null)
-                {
-                    isProblemCard = true;
-                    Logger.DebugWriteLine("===DD target 1: " + target?.Name);
-                }
-                // Destroy target
-                if (Duel.LastChainPlayer == 1 && target == null)
-                {
-                    List<ClientCard> currentTargetList = Duel.LastChainTargets.Where(card => card.Controller == 1 &&
-                        (card.Location == CardLocation.MonsterZone || card.Location == CardLocation.SpellZone || card.Location == CardLocation.FieldZone)).ToList();
-                    if (currentTargetList.Count() > 0)
-                    {
-                        target = ShuffleCardList(currentTargetList)[0];
-                        Logger.DebugWriteLine("===DD target 2: " + target?.Name);
-                    }
-                }
 
-                // dump Destroy
-                if (target == null)
-                {
-                    target = GetBestEnemyCard(false, false);
-                    bool check1 = !DefaultOnBecomeTarget() || Util.ChainContainsCard(_CardId.EvenlyMatched);
-                    bool check2 = !targetedDDList.Contains(Card);
-                    bool check3 = !Bot.UnderAttack;
-                    bool check4 = Duel.Phase != DuelPhase.End;
-                    bool check5 = Duel.Player == 0 || Enemy.GetMonsterCount() < 2;
-                    Logger.DebugWriteLine("===DD check flag: " + check1 + " " + check2 + " " + check3 + " " + check4 + " " + check5);
-                    if (check1 && check2 && check3 && check4 && check5)
-                    {
-                        target = null;
-                    }
-                }
-
-                if (target != null && (Duel.LastChainPlayer != 0 || Util.GetLastChainCard() == Card))
-                {
-                    if (isProblemCard)
-                    {
-                        removeChosenList.Add(target);
-                    }
-                    Logger.DebugWriteLine("===DD target final: " + target?.Name);
-                    activatedDDList.Add(Card);
-                    AI.SelectCard();
-                    AI.SelectNextCard(target);
-                    return true;
-                }
-
-                return false;
             }
-            return false;
-        }
-        public bool CrossEffect()
-        {
-            if (ActivateDescription == Util.GetStringId(CardId.RyzealCross, 1))
-            {
-                List<ClientCard> ReturnList = new List<ClientCard>();
-                //ShuffleCardList(Bot.Graveyard.Where(card => card != null && card.IsMonster() && card.HasType(CardType.Xyz) && card.ProcCompleted == 0).ToList());
-                foreach (ClientCard graveCard in Bot.Graveyard)
-                {
-                    if (graveCard.HasSetcode(0x1be))
-                    {
-                        if (graveCard.HasType(CardType.Xyz) && graveCard.ProcCompleted == 0)
-                        {
-                            ReturnList.Add(graveCard);
-                        }
-                        else if (graveCard.HasType(CardType.Spell) || graveCard.HasType(CardType.Trap))
-                        {
-                            ReturnList.Add(graveCard);
-                        }
-                        else if (graveCard.IsCode(CardId.RyzealEx))
-                        {
-                            ReturnList.Add(graveCard);
-                        }
-                        else
-                        {
-                            ReturnList.Add(graveCard);
-                        }
-                    }
-                }
-                AI.SelectCard(ReturnList);
+            else
+            { 
+                Logger.DebugWriteLine("============DD Else ============  ");
                 return true;
             }
-            if (Bot.HasInSpellZone(CardId.RyzealCross))
-            {
-                return false;
-            }
-            return true;
         }
-        public bool CheckCross()
-        {
-            if (Bot.HasInSpellZone(CardId.RyzealCross) && 
-                Cross == false &&
-                (Bot.HasInMonstersZone(CardId.RyzealDD) && Card.HasXyzMaterial(CardId.RyzealDD) ||
-                Bot.HasInMonstersZone(CardId.RyzealDuo) && Card.HasXyzMaterial(CardId.RyzealDuo))
-               )
-            {
-                return true;
-            }
-            return false;
-        }
-
     }
 }
